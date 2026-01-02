@@ -226,3 +226,20 @@ vim.api.nvim_create_autocmd('BufWritePre', {
     })
   end,
 })
+
+
+-- 8. Quick Python Runner
+-- Press <leader>r to run current Python file in a horizontal split terminal
+vim.keymap.set('n', '<leader>r', function()
+  vim.cmd('write')  -- Save first
+  vim.cmd('split | terminal python3 %')
+end, { desc = 'Run Python file' })
+
+-- Press <leader>R to run in a vertical split instead
+vim.keymap.set('n', '<leader>R', function()
+  vim.cmd('write')
+  vim.cmd('vsplit | terminal python3 %')
+end, { desc = 'Run Python file (vertical)' })
+
+-- Quick escape from terminal mode
+vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
