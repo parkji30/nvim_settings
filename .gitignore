@@ -1,0 +1,15 @@
+# Plugin data (managed by lazy.nvim, auto-downloaded)
+lazy-lock.json
+
+# Undo history
+undo/
+
+# Swap files
+*.swp
+*.swo
+
+# Session files
+Session.vim
+
+# Local overrides (if you use them)
+lua/local/
