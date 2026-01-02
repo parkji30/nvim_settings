@@ -22,6 +22,28 @@ require("lazy").setup({
   "hrsh7th/cmp-buffer",       -- Buffer words source
   "L3MON4D3/LuaSnip",         -- Snippet engine (required by cmp)
   "saadparwaiz1/cmp_luasnip", -- Snippet completions
+
+  -- Signature help (shows function params as you type)
+  {
+    "ray-x/lsp_signature.nvim",
+    event = "VeryLazy",
+    opts = {
+      bind = true,
+      handler_opts = {
+        border = "rounded",
+      },
+      hint_enable = true,           -- Virtual hint (shows param name)
+      hint_prefix = "🔹 ",          -- Icon before the hint
+      floating_window = true,       -- Show signature in floating window
+      floating_window_above_cur_line = true,
+      hi_parameter = "LspSignatureActiveParameter", -- Highlight current param
+      max_height = 12,
+      max_width = 80,
+      wrap = true,
+      doc_lines = 10,               -- Show docs in signature window
+      toggle_key = '<C-k>',         -- Toggle signature on/off
+    },
+  },
 })
 
 
@@ -174,6 +196,9 @@ vim.api.nvim_create_autocmd('LspAttach', {
 
     -- Code actions
     vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
+
+    -- Signature help (manual trigger)
+    vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, opts)
 
     -- Format with Ruff
     vim.keymap.set('n', 'rf', function()
