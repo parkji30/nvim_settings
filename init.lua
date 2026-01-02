@@ -24,26 +24,7 @@ require("lazy").setup({
   "saadparwaiz1/cmp_luasnip", -- Snippet completions
 
   -- Signature help (shows function params as you type)
-  {
-    "ray-x/lsp_signature.nvim",
-    event = "VeryLazy",
-    opts = {
-      bind = true,
-      handler_opts = {
-        border = "rounded",
-      },
-      hint_enable = true,           -- Virtual hint (shows param name)
-      hint_prefix = "🔹 ",          -- Icon before the hint
-      floating_window = true,       -- Show signature in floating window
-      floating_window_above_cur_line = true,
-      hi_parameter = "LspSignatureActiveParameter", -- Highlight current param
-      max_height = 12,
-      max_width = 80,
-      wrap = true,
-      doc_lines = 10,               -- Show docs in signature window
-      toggle_key = '<C-k>',         -- Toggle signature on/off
-    },
-  },
+  "ray-x/lsp_signature.nvim",
 })
 
 
@@ -185,6 +166,23 @@ vim.api.nvim_create_autocmd('LspAttach', {
   callback = function(ev)
     local opts = { buffer = ev.buf }
 
+    -- Setup lsp_signature for this buffer
+    require('lsp_signature').on_attach({
+      bind = true,
+      handler_opts = { border = "rounded" },
+      hint_enable = true,
+      hint_prefix = "🔹 ",
+      floating_window = true,
+      floating_window_above_cur_line = true,
+      hi_parameter = "LspSignatureActiveParameter",
+      max_height = 12,
+      max_width = 80,
+      wrap = true,
+      doc_lines = 10,
+      toggle_key = '<C-s>',
+      select_signature_key = '<C-n>',
+    }, ev.buf)
+
     -- Go to definition
     vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
 
@@ -197,7 +195,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
     -- Code actions
     vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
 
-    -- Signature help (manual trigger)
+    -- Manual signature help trigger
     vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, opts)
 
     -- Format with Ruff
