@@ -63,13 +63,20 @@ vim.diagnostic.config({
 
 -- 5. Python LSP Configuration (Pyright + Ruff)
 
--- Helper to find the local .venv python
+-- Helper to find the local .venv python (works with uv, poetry, etc.)
 local function get_python_path()
   local cwd = vim.fn.getcwd()
+  -- Check for .venv in current directory (uv, python -m venv)
   local venv_path = cwd .. '/.venv/bin/python'
   if vim.fn.executable(venv_path) == 1 then
     return venv_path
   end
+  -- Check for venv in current directory
+  venv_path = cwd .. '/venv/bin/python'
+  if vim.fn.executable(venv_path) == 1 then
+    return venv_path
+  end
+  -- Fallback to system python
   return vim.fn.exepath('python3') or vim.fn.exepath('python') or 'python'
 end
 
@@ -228,17 +235,21 @@ vim.api.nvim_create_autocmd('BufWritePre', {
 })
 
 
--- 8. Quick Python Runner
+
+-- 8. Quick Python Runner (uses venv if available)
+
 -- Press <leader>r to run current Python file in a horizontal split terminal
 vim.keymap.set('n', '<leader>r', function()
   vim.cmd('write')  -- Save first
-  vim.cmd('split | terminal python3 %')
+  local python = get_python_path()
+  vim.cmd('split | terminal ' .. python .. ' %')
 end, { desc = 'Run Python file' })
 
 -- Press <leader>R to run in a vertical split instead
 vim.keymap.set('n', '<leader>R', function()
   vim.cmd('write')
-  vim.cmd('vsplit | terminal python3 %')
+  local python = get_python_path()
+  vim.cmd('vsplit | terminal ' .. python .. ' %')
 end, { desc = 'Run Python file (vertical)' })
 
 -- Quick escape from terminal mode
