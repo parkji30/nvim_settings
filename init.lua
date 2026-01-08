@@ -31,7 +31,7 @@ require("lazy").setup({
   -- Telescope: Fuzzy finder for files, grep, buffers, and more
   {
     "nvim-telescope/telescope.nvim",
-    tag = "0.1.8",
+    -- Using main branch for Neovim 0.11+ compatibility
     dependencies = {
       "nvim-lua/plenary.nvim",
       -- Optional but recommended: native fzf for better performance
@@ -118,4 +118,216 @@ require("lazy").setup({
       require("which-key").setup()
     end,
   },
+
+  -- LSP Configuration
+  "neovim/nvim-lspconfig",
+
+  -- Autocompletion
+  "hrsh7th/nvim-cmp",
+  "hrsh7th/cmp-nvim-lsp",
+  "hrsh7th/cmp-buffer",
+  "L3MON4D3/LuaSnip",
+  "saadparwaiz1/cmp_luasnip",
+
+  -- Signature help (shows function params as you type)
+  "ray-x/lsp_signature.nvim",
+
+  -- Treesitter: Installs parsers (highlighting is built-in on Neovim 0.11+)
+  {
+    "nvim-treesitter/nvim-treesitter",
+    build = ":TSUpdate",
+    config = function()
+      require("nvim-treesitter").setup({
+        ensure_installed = { "python", "lua", "bash", "json", "yaml", "markdown" },
+        auto_install = true,
+      })
+    end,
+  },
+
+  -- Claude Code integration
+  {
+    "coder/claudecode.nvim",
+    config = function()
+      require("claudecode").setup({
+        terminal = {
+          split_side = "right",
+          split_width_percentage = 0.4,
+        },
+      })
+
+      vim.keymap.set('n', '<leader>cc', '<cmd>ClaudeCode<cr>', { desc = 'Toggle Claude Code' })
+      vim.keymap.set('n', '<leader>cs', '<cmd>ClaudeCodeSend<cr>', { desc = 'Send to Claude' })
+      vim.keymap.set('v', '<leader>cs', '<cmd>ClaudeCodeSend<cr>', { desc = 'Send selection to Claude' })
+    end,
+  },
 })
+
+-- 5. Helper to find local .venv python (works with uv, poetry, etc.)
+local function get_python_path()
+  local cwd = vim.fn.getcwd()
+  local venv_path = cwd .. '/.venv/bin/python'
+  if vim.fn.executable(venv_path) == 1 then
+    return venv_path
+  end
+  venv_path = cwd .. '/venv/bin/python'
+  if vim.fn.executable(venv_path) == 1 then
+    return venv_path
+  end
+  return vim.fn.exepath('python3') or vim.fn.exepath('python') or 'python'
+end
+
+-- 6. Diagnostic Configuration
+vim.diagnostic.config({
+  underline = true,
+  virtual_text = { spacing = 4, prefix = '●' },
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = "✘",
+      [vim.diagnostic.severity.WARN]  = "▲",
+      [vim.diagnostic.severity.HINT]  = "⚑",
+      [vim.diagnostic.severity.INFO]  = "»",
+    },
+  },
+  update_in_insert = true,
+  severity_sort = true,
+  float = { border = "rounded", source = "always" },
+})
+
+-- 7. Python LSP Configuration (Pyright + Ruff)
+vim.lsp.config.pyright = {
+  settings = {
+    python = {
+      pythonPath = get_python_path(),
+      analysis = {
+        typeCheckingMode = "standard",
+        diagnosticSeverityOverrides = {
+          reportUnknownMemberType = "none",
+          reportUnknownArgumentType = "none",
+          reportUnknownVariableType = "none",
+          reportUnknownParameterType = "none",
+          reportUnknownLambdaType = "none",
+          reportMissingTypeStubs = "none",
+        },
+      },
+    },
+    pyright = {
+      disableOrganizeImports = true,
+    },
+  },
+}
+
+vim.lsp.config.ruff = {}
+vim.lsp.enable({ 'pyright', 'ruff' })
+
+-- 8. Autocompletion Setup
+local cmp = require('cmp')
+local luasnip = require('luasnip')
+
+cmp.setup({
+  snippet = {
+    expand = function(args)
+      luasnip.lsp_expand(args.body)
+    end,
+  },
+  mapping = cmp.mapping.preset.insert({
+    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+    ['<C-Space>'] = cmp.mapping.complete(),
+    ['<C-e>'] = cmp.mapping.abort(),
+    ['<CR>'] = cmp.mapping.confirm({ select = true }),
+    ['<Tab>'] = cmp.mapping(function(fallback)
+      if cmp.visible() then
+        cmp.select_next_item()
+      elseif luasnip.expand_or_jumpable() then
+        luasnip.expand_or_jump()
+      else
+        fallback()
+      end
+    end, { 'i', 's' }),
+    ['<S-Tab>'] = cmp.mapping(function(fallback)
+      if cmp.visible() then
+        cmp.select_prev_item()
+      elseif luasnip.jumpable(-1) then
+        luasnip.jump(-1)
+      else
+        fallback()
+      end
+    end, { 'i', 's' }),
+  }),
+  sources = cmp.config.sources({
+    { name = 'nvim_lsp' },
+    { name = 'luasnip' },
+  }, {
+    { name = 'buffer' },
+  }),
+})
+
+-- 9. LSP Keybindings (on attach)
+vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+  callback = function(ev)
+    local opts = { buffer = ev.buf }
+
+    require('lsp_signature').on_attach({
+      bind = true,
+      handler_opts = { border = "rounded" },
+      hint_enable = true,
+      hint_prefix = "🔹 ",
+      floating_window = true,
+      floating_window_above_cur_line = true,
+      hi_parameter = "LspSignatureActiveParameter",
+      max_height = 12,
+      max_width = 80,
+      wrap = true,
+      doc_lines = 10,
+      toggle_key = '<C-s>',
+      select_signature_key = '<C-n>',
+    }, ev.buf)
+
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
+    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
+    vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, opts)
+    vim.keymap.set('n', 'rf', function()
+      vim.lsp.buf.format({
+        async = true,
+        filter = function(client)
+          return client.name == "ruff"
+        end,
+      })
+    end, opts)
+  end,
+})
+
+-- Diagnostic navigation
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Previous diagnostic' })
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Next diagnostic' })
+
+-- Format Python on save
+vim.api.nvim_create_autocmd('BufWritePre', {
+  pattern = '*.py',
+  callback = function()
+    vim.lsp.buf.format({
+      async = false,
+      filter = function(client)
+        return client.name == "ruff"
+      end,
+    })
+  end,
+})
+
+-- 10. Quick Python Runner
+vim.keymap.set('n', '<leader>r', function()
+  vim.cmd('write')
+  local python = get_python_path()
+  vim.cmd('split | terminal ' .. python .. ' %')
+end, { desc = 'Run Python file' })
+
+vim.keymap.set('n', '<leader>R', function()
+  vim.cmd('write')
+  local python = get_python_path()
+  vim.cmd('vsplit | terminal ' .. python .. ' %')
+end, { desc = 'Run Python file (vertical)' })
+
+vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
