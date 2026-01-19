@@ -26,6 +26,25 @@ vim.opt.signcolumn = "yes"     -- Always show sign column
 vim.opt.updatetime = 250       -- Faster completion
 vim.opt.clipboard = "unnamedplus" -- Use system clipboard
 
+-- Indentation
+vim.opt.expandtab = true       -- Use spaces instead of tabs
+vim.opt.shiftwidth = 4         -- Indent by 4 spaces
+vim.opt.tabstop = 4            -- Tab = 4 spaces
+vim.opt.smartindent = true     -- Auto-indent new lines
+
+-- Better experience
+vim.opt.scrolloff = 8          -- Keep 8 lines above/below cursor
+vim.opt.sidescrolloff = 8      -- Keep 8 columns left/right of cursor
+vim.opt.wrap = false           -- Don't wrap lines
+vim.opt.cursorline = true      -- Highlight current line
+vim.opt.undofile = true        -- Persistent undo (survives closing)
+vim.opt.mouse = "a"            -- Enable mouse in all modes
+vim.opt.showmode = false       -- Hide mode (lualine shows it)
+vim.opt.inccommand = "split"   -- Live preview for :s/find/replace
+vim.opt.splitright = true      -- Vertical splits open right
+vim.opt.splitbelow = true      -- Horizontal splits open below
+vim.opt.timeoutlen = 300       -- Faster which-key popup
+
 -- 4. Load plugins with lazy.nvim
 require("lazy").setup({
   -- Telescope: Fuzzy finder for files, grep, buffers, and more
@@ -160,6 +179,22 @@ require("lazy").setup({
       vim.keymap.set('v', '<leader>cs', '<cmd>ClaudeCodeSend<cr>', { desc = 'Send selection to Claude' })
     end,
   },
+
+  -- Git conflict resolution
+  {
+    "akinsho/git-conflict.nvim",
+    version = "*",
+    config = function()
+      require("git-conflict").setup({
+        default_mappings = true,
+        disable_diagnostics = false,
+        highlights = {
+          incoming = "DiffAdd",
+          current = "DiffText",
+        },
+      })
+    end,
+  },
 })
 
 -- 5. Helper to find local .venv python (works with uv, poetry, etc.)
@@ -291,11 +326,12 @@ vim.api.nvim_create_autocmd('LspAttach', {
     vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, opts)
     vim.keymap.set('n', 'rf', function()
       vim.lsp.buf.format({
-        async = true,
+        async = false,
         filter = function(client)
           return client.name == "ruff"
         end,
       })
+      vim.notify("Ruff format applied", vim.log.levels.INFO)
     end, opts)
   end,
 })
