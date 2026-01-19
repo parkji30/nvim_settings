@@ -81,8 +81,17 @@ require("lazy").setup({
       -- Load fzf extension for better performance (if available)
       pcall(telescope.load_extension, "fzf")
 
+      -- Smart find: use git_files in a repo (respects .gitignore), fallback to find_files
+      local function find_files_smart()
+        local ok = pcall(builtin.git_files, { show_untracked = true })
+        if not ok then
+          builtin.find_files()
+        end
+      end
+
       -- Keymaps for Telescope
-      vim.keymap.set("n", "<leader>ff", builtin.find_files, { desc = "Find files" })
+      vim.keymap.set("n", "<leader>ff", find_files_smart, { desc = "Find files (git-aware)" })
+      vim.keymap.set("n", "<leader>fF", builtin.find_files, { desc = "Find ALL files" })
       vim.keymap.set("n", "<leader>fg", builtin.live_grep, { desc = "Live grep (search text)" })
       vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Find buffers" })
       vim.keymap.set("n", "<leader>fh", builtin.help_tags, { desc = "Help tags" })
@@ -91,7 +100,7 @@ require("lazy").setup({
       vim.keymap.set("n", "<leader>/", builtin.current_buffer_fuzzy_find, { desc = "Search in buffer" })
 
       -- Quick access shortcuts
-      vim.keymap.set("n", "<C-p>", builtin.find_files, { desc = "Find files (Ctrl+P)" })
+      vim.keymap.set("n", "<C-p>", find_files_smart, { desc = "Find files (Ctrl+P)" })
     end,
   },
 
