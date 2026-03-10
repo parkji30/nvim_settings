@@ -15,6 +15,7 @@ vim.opt.rtp:prepend(lazypath)
 -- 2. Set leader key (do this BEFORE loading plugins)
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
+vim.g.python3_host_prog = "/usr/bin/python3"
 
 -- 3. Basic Neovim settings
 vim.opt.number = true          -- Show line numbers
@@ -202,6 +203,41 @@ require("lazy").setup({
           current = "DiffText",
         },
       })
+    end,
+  },
+
+  -- Convert .ipynb to readable Python when opening in Neovim
+  {
+    "GCBallesteros/jupytext.nvim",
+    config = function()
+      require("jupytext").setup({
+        style = "hydrogen",
+        output_extension = "auto",
+        force_ft = "python",
+      })
+    end,
+  },
+
+  -- Jupyter notebook support with molten.nvim
+  {
+    "benlubas/molten-nvim",
+    version = "^1.0.0",
+    build = ":UpdateRemotePlugins",
+    init = function()
+      vim.g.molten_output_win_max_height = 20
+      vim.g.molten_auto_open_output = true
+      vim.g.molten_virt_text_output = true
+    end,
+    config = function()
+      vim.keymap.set("n", "<leader>mi", ":MoltenInit<CR>", { desc = "Initialize Molten kernel" })
+      vim.keymap.set("n", "<leader>me", ":MoltenEvaluateOperator<CR>", { desc = "Molten evaluate operator" })
+      vim.keymap.set("n", "<leader>ml", ":MoltenEvaluateLine<CR>", { desc = "Evaluate line" })
+      vim.keymap.set("v", "<leader>mv", ":<C-u>MoltenEvaluateVisual<CR>gv", { desc = "Evaluate visual selection" })
+      vim.keymap.set("n", "<leader>mc", ":MoltenReevaluateCell<CR>", { desc = "Re-evaluate cell" })
+      vim.keymap.set("n", "<leader>md", ":MoltenDelete<CR>", { desc = "Delete cell output" })
+      vim.keymap.set("n", "<leader>mo", ":MoltenShowOutput<CR>", { desc = "Show output" })
+      vim.keymap.set("n", "<leader>mh", ":MoltenHideOutput<CR>", { desc = "Hide output" })
+      vim.keymap.set("n", "<leader>mr", ":MoltenRestart!<CR>", { desc = "Restart kernel" })
     end,
   },
 })
